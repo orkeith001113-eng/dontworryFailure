@@ -370,7 +370,7 @@
             font-weight: 300;
         }
 
-        /* 報酬セクション */
+        /* プレゼントセクション */
         .reward-section {
             background: var(--light-gray);
             border: 1px solid var(--border);
@@ -703,7 +703,7 @@
                         </div>
                     </div>
                     <div id="levelRewardBadge" style="display: none;">
-                        <div class="level-reward-badge">報酬獲得</div>
+                        <div class="level-reward-badge">プレゼント獲得</div>
                     </div>
                 </div>
                 <div class="level-progress" id="levelProgressBar">
@@ -721,7 +721,7 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('record')">記録</button>
             <button class="tab" onclick="switchTab('dashboard')">ダッシュボード</button>
-            <button class="tab" onclick="switchTab('rewards')">報酬</button>
+            <button class="tab" onclick="switchTab('rewards')">プレゼント</button>
         </div>
 
         <!-- 記録タブ -->
@@ -798,26 +798,26 @@
             </div>
         </div>
 
-        <!-- 報酬タブ -->
+        <!-- プレゼントタブ -->
         <div id="rewardsTab" class="tab-content">
             <div class="card">
-                <h2>報酬システム</h2>
+                <h2>プレゼントシステム</h2>
                 <div class="reward-section">
-                    <h3>報酬を記録</h3>
+                    <h3>プレゼントを記録</h3>
                     <div class="form-group">
-                        <label>報酬の内容</label>
+                        <label>プレゼントの内容</label>
                         <input type="text" id="rewardInput" placeholder="ご褒美の内容（例：好きな本を買う）">
                     </div>
                     <div class="form-group">
-                        <label>必要な積分（任意）</label>
-                        <input type="number" id="rewardCost" placeholder="積分（例：50）" min="0">
-                        <small style="color: var(--medium-gray); font-size: 0.85em; display: block; margin-top: 5px;">積分を設定すると、後で交換できます</small>
+                        <label>必要なポイント（任意）</label>
+                        <input type="number" id="rewardCost" placeholder="ポイント（例：50）" min="0">
+                        <small style="color: var(--medium-gray); font-size: 0.85em; display: block; margin-top: 5px;">ポイントを設定すると、後で交換できます</small>
                     </div>
-                    <button class="btn btn-reward" onclick="recordReward()">報酬を記録</button>
+                    <button class="btn btn-reward" onclick="recordReward()">プレゼントを記録</button>
                     <div id="rewardAlert"></div>
                 </div>
                 <div style="margin-top: 20px;">
-                    <h3 style="margin-bottom: 10px;">報酬履歴</h3>
+                    <h3 style="margin-bottom: 10px;">プレゼント履歴</h3>
                     <div class="reward-list" id="rewardList"></div>
                 </div>
                 <div style="margin-top: 20px;">
@@ -833,7 +833,7 @@
         let records = JSON.parse(localStorage.getItem('failureRecords') || '[]');
         let goal = parseInt(localStorage.getItem('failureGoal') || '0');
         let rewards = JSON.parse(localStorage.getItem('failureRewards') || '[]');
-        let usedPoints = parseInt(localStorage.getItem('usedPoints') || '0'); // 已使用的积分
+        let usedPoints = parseInt(localStorage.getItem('usedPoints') || '0'); // 已使用的ポイント
         let levelThreshold = parseInt(localStorage.getItem('levelThreshold') || '100'); // 每级需要的点数
         let levelHistory = JSON.parse(localStorage.getItem('levelHistory') || '[]'); // 升级历史
         let selectedType = null;
@@ -946,7 +946,7 @@
             
             if (!leveledUp) {
                 if (goal > 0 && totalScore >= goal) {
-                    showAlert('recordAlert', `おめでとうございます！目標点数 ${goal} 点に到達しました！報酬を記録しましょう！`, 'success');
+                    showAlert('recordAlert', `おめでとうございます！目標点数 ${goal} 点に到達しました！プレゼントを記録しましょう！`, 'success');
                 } else {
                     showAlert('recordAlert', `記録しました！+${record.points}点`, 'success');
                 }
@@ -993,7 +993,7 @@
                 // 自动添加一次免费奖励
                 const freeReward = {
                     id: Date.now(),
-                    text: `レベル${newLevel}達成報酬`,
+                    text: `レベル${newLevel}達成プレゼント`,
                     score: newScore,
                     cost: 0,
                     exchanged: false,
@@ -1004,7 +1004,7 @@
                 rewards.unshift(freeReward);
                 localStorage.setItem('failureRewards', JSON.stringify(rewards));
                 
-                showAlert('recordAlert', `レベルアップ！レベル${newLevel}に到達しました。報酬を獲得しました！`, 'success');
+                showAlert('recordAlert', `レベルアップ！レベル${newLevel}に到達しました。プレゼントを獲得しました！`, 'success');
                 loadRewards();
                 loadLevelHistory();
                 return true;
@@ -1051,7 +1051,7 @@
         // ダッシュボード更新
         function updateDashboard() {
             const totalScore = getTotalScore();
-            const availableScore = totalScore - usedPoints; // 可用积分
+            const availableScore = totalScore - usedPoints; // 可用ポイント
             const challengeCount = records.filter(r => r.type === 'challenge').length;
             const totalCount = records.length;
 
@@ -1059,7 +1059,7 @@
             document.getElementById('challengeCount').textContent = challengeCount;
             document.getElementById('totalCount').textContent = totalCount;
 
-            // 如果有已使用的积分，显示可用积分
+            // 如果有已使用的ポイント，显示可用ポイント
             const scoreLabel = document.getElementById('scoreLabel');
             if (usedPoints > 0) {
                 if (scoreLabel) {
@@ -1539,11 +1539,11 @@
             });
         }
 
-        // 報酬記録
+        // プレゼント記録
         function recordReward() {
             const rewardText = document.getElementById('rewardInput').value.trim();
             if (!rewardText) {
-                showAlert('rewardAlert', '報酬の内容を入力してください', 'error');
+                showAlert('rewardAlert', 'プレゼントの内容を入力してください', 'error');
                 return;
             }
 
@@ -1564,17 +1564,17 @@
 
             document.getElementById('rewardInput').value = '';
             document.getElementById('rewardCost').value = '';
-            showAlert('rewardAlert', '報酬を記録しました！', 'success');
+            showAlert('rewardAlert', 'プレゼントを記録しました！', 'success');
             loadRewards();
             updateDashboard();
         }
 
-        // 報酬一覧表示
+        // プレゼント一覧表示
         function loadRewards() {
             const listDiv = document.getElementById('rewardList');
             
             if (rewards.length === 0) {
-                listDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">まだ報酬がありません</p>';
+                listDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">まだプレゼントがありません</p>';
                 return;
             }
 
@@ -1586,9 +1586,9 @@
                     <div class="reward-item ${reward.exchanged ? 'exchanged' : ''}" data-id="${reward.id}">
                         <div>
                             <strong>${reward.text}</strong>
-                            ${isLevelReward ? '<span class="level-reward-badge" style="margin-left: 8px;">レベル報酬</span>' : ''}
+                            ${isLevelReward ? '<span class="level-reward-badge" style="margin-left: 8px;">レベルプレゼント</span>' : ''}
                         </div>
-                        ${reward.cost > 0 ? `<div class="reward-cost">必要積分: ${reward.cost}点</div>` : isLevelReward ? '<div class="reward-cost" style="color: var(--primary);">無料報酬</div>' : ''}
+                        ${reward.cost > 0 ? `<div class="reward-cost">必要ポイント: ${reward.cost}点</div>` : isLevelReward ? '<div class="reward-cost" style="color: var(--primary);">無料プレゼント</div>' : ''}
                         <div class="reward-date">記録時点数: ${reward.score}点 - ${formatDate(date)}</div>
                         ${reward.exchanged && exchangedDate ? `<div class="reward-status">交換済み: ${formatDate(exchangedDate)}</div>` : ''}
                         <div class="reward-actions">
@@ -1602,12 +1602,12 @@
             }).join('');
         }
 
-        // レベル報酬使用
+        // レベルプレゼント使用
         function useLevelReward(id) {
             const reward = rewards.find(r => r.id === id);
             if (!reward || reward.exchanged || !reward.isLevelReward) return;
 
-            if (confirm('このレベル報酬を使用しますか？')) {
+            if (confirm('このレベルプレゼントを使用しますか？')) {
                 reward.exchanged = true;
                 reward.exchangeDate = new Date().toISOString();
                 
@@ -1615,16 +1615,16 @@
                 
                 loadRewards();
                 updateDashboard();
-                showAlert('rewardAlert', 'レベル報酬を使用しました！', 'success');
+                showAlert('rewardAlert', 'レベルプレゼントを使用しました！', 'success');
             }
         }
 
-        // 報酬削除
+        // プレゼント削除
         function deleteReward(id) {
-            if (confirm('この報酬を削除しますか？')) {
+            if (confirm('このプレゼントを削除しますか？')) {
                 const reward = rewards.find(r => r.id === id);
                 if (reward && reward.exchanged) {
-                    // 如果已兑换，恢复积分
+                    // 如果已兑换，恢复ポイント
                     usedPoints = Math.max(0, usedPoints - reward.cost);
                     localStorage.setItem('usedPoints', usedPoints.toString());
                 }
@@ -1635,7 +1635,7 @@
             }
         }
 
-        // 報酬編集
+        // プレゼント編集
         function editReward(id) {
             const reward = rewards.find(r => r.id === id);
             if (!reward || reward.exchanged || reward.isLevelReward) return;
@@ -1655,12 +1655,12 @@
             editForm.className = 'edit-form';
             editForm.innerHTML = `
                 <div class="form-group">
-                    <label>報酬の内容</label>
+                    <label>プレゼントの内容</label>
                     <input type="text" id="edit-reward-text-${id}" value="${reward.text}" placeholder="ご褒美の内容">
                 </div>
                 <div class="form-group">
-                    <label>必要な積分</label>
-                    <input type="number" id="edit-reward-cost-${id}" value="${reward.cost || 0}" placeholder="積分" min="0">
+                    <label>必要なポイント</label>
+                    <input type="number" id="edit-reward-cost-${id}" value="${reward.cost || 0}" placeholder="ポイント" min="0">
                 </div>
                 <div class="edit-form-actions">
                     <button class="btn" onclick="saveReward(${id})">保存</button>
@@ -1672,7 +1672,7 @@
             rewardItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        // 報酬保存
+        // プレゼント保存
         function saveReward(id) {
             const reward = rewards.find(r => r.id === id);
             if (!reward || reward.exchanged || reward.isLevelReward) return;
@@ -1682,16 +1682,16 @@
             const newCost = parseInt(document.getElementById(`edit-reward-cost-${id}`).value) || 0;
 
             if (!newText) {
-                alert('報酬の内容を入力してください');
+                alert('プレゼントの内容を入力してください');
                 return;
             }
 
-            // 如果积分增加且已兑换，需要检查
+            // 如果ポイント增加且已兑换，需要检查
             if (reward.exchanged && newCost > reward.cost) {
                 const additionalCost = newCost - reward.cost;
                 const availablePoints = getTotalScore() - usedPoints;
                 if (availablePoints < additionalCost) {
-                    alert(`積分が不足しています。追加で${additionalCost}点必要です。`);
+                    alert(`ポイントが不足しています。追加で${additionalCost}点必要です。`);
                     return;
                 }
                 usedPoints += additionalCost;
@@ -1713,7 +1713,7 @@
             updateDashboard();
         }
 
-        // 報酬編集キャンセル
+        // プレゼント編集キャンセル
         function cancelRewardEdit(id) {
             const rewardItem = document.querySelector(`.reward-item[data-id="${id}"]`);
             const editForm = rewardItem.querySelector('.edit-form');
@@ -1722,18 +1722,18 @@
             }
         }
 
-        // 報酬交換
+        // プレゼント交換
         function exchangeReward(id) {
             const reward = rewards.find(r => r.id === id);
             if (!reward || reward.exchanged || reward.cost <= 0 || reward.isLevelReward) return;
 
             const availablePoints = getTotalScore() - usedPoints;
             if (availablePoints < reward.cost) {
-                alert(`積分が不足しています。現在の利用可能積分: ${availablePoints}点、必要積分: ${reward.cost}点`);
+                alert(`ポイントが不足しています。現在の利用可能ポイント: ${availablePoints}点、必要ポイント: ${reward.cost}点`);
                 return;
             }
 
-            if (confirm(`この報酬を交換しますか？\n必要積分: ${reward.cost}点\n利用可能積分: ${availablePoints}点`)) {
+            if (confirm(`このプレゼントを交換しますか？\n必要ポイント: ${reward.cost}点\n利用可能ポイント: ${availablePoints}点`)) {
                 reward.exchanged = true;
                 reward.exchangeDate = new Date().toISOString();
                 usedPoints += reward.cost;
@@ -1743,7 +1743,7 @@
                 
                 loadRewards();
                 updateDashboard();
-                showAlert('rewardAlert', `報酬を交換しました！${reward.cost}点を使用しました。`, 'success');
+                showAlert('rewardAlert', `プレゼントを交換しました！${reward.cost}点を使用しました。`, 'success');
             }
         }
 
@@ -1768,10 +1768,10 @@
             });
         }
 
-        // 報酬タブ表示時に報酬を読み込む
+        // プレゼントタブ表示時にプレゼントを読み込む
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', function() {
-                if (this.textContent.includes('報酬')) {
+                if (this.textContent.includes('プレゼント')) {
                     loadRewards();
                     loadLevelHistory();
                 }
