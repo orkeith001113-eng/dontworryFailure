@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>失敗ログ - 挑戦の記録</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #000;
+            --secondary: #333;
+            --light-gray: #f5f5f5;
+            --medium-gray: #999;
+            --dark-gray: #666;
+            --border: #e0e0e0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
+            background: #fff;
+            min-height: 100vh;
+            padding: 10px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: #000;
+            margin-bottom: 20px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            color: var(--dark-gray);
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            font-weight: 400;
+        }
+
+        /* ダッシュボード - 失敗点の強調表示 */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .score-card {
+            background: #000;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid #000;
+        }
+
+        .score-card .score-label {
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            color: var(--medium-gray);
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .score-card .score-value {
+            font-size: clamp(3rem, 10vw, 5rem);
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .score-card .score-subtitle {
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
+            color: var(--medium-gray);
+            font-weight: 300;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: var(--light-gray);
+            padding: 15px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-item .stat-value {
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            font-weight: 300;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .stat-item .stat-label {
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            color: var(--dark-gray);
+            font-weight: 300;
+        }
+
+        .level-section {
+            background: var(--light-gray);
+            border: 1px solid var(--border);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .level-section h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            font-weight: 400;
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .level-current {
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            font-weight: 300;
+            color: var(--primary);
+        }
+
+        .level-progress {
+            margin-top: 10px;
+            height: 20px;
+            background: var(--light-gray);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .level-progress-bar {
+            height: 100%;
+            background: #000;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.85em;
+            font-weight: 300;
+        }
+
+        .level-reward-badge {
+            display: inline-block;
+            background: #000;
+            color: white;
+            padding: 4px 10px;
+            font-size: 0.85em;
+            margin-left: 10px;
+            font-weight: 300;
+        }
+
+        .level-history {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .level-history-item {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+        }
+
+        .level-history-item:last-child {
+            border-bottom: none;
+        }
+
+        .challenge-highlight {
+            background: #000;
+            color: white;
+            border: 1px solid #000;
+        }
+
+        .challenge-highlight .stat-value {
+            color: white;
+        }
+
+        .challenge-highlight .stat-label {
+            color: var(--medium-gray);
+        }
+
+        /* 失敗記録フォーム */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+        }
+
+        .failure-type-buttons {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .type-btn {
+            padding: 15px;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+        }
+
+        .type-btn:hover {
+            background: var(--light-gray);
+        }
+
+        .type-btn.selected {
+            border-color: var(--primary);
+            border-width: 2px;
+            background: var(--light-gray);
+        }
+
+        .type-btn.challenge {
+            border-left: 3px solid #000;
+        }
+
+        .type-btn.start {
+            border-left: 3px solid #666;
+        }
+
+        .type-btn.external {
+            border-left: 3px solid #999;
+        }
+
+        .type-btn .type-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .type-btn .type-points {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            transition: border-color 0.2s;
+            font-family: inherit;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            background: #000;
+            color: white;
+            border: 1px solid #000;
+            padding: 15px 30px;
+            font-size: clamp(1rem, 3vw, 1.1rem);
+            cursor: pointer;
+            transition: background 0.2s;
+            font-weight: 300;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: #333;
+        }
+
+        .btn:active {
+            background: #000;
+        }
+
+        /* 目標設定 */
+        .goal-section {
+            background: var(--light-gray);
+            border: 1px solid var(--border);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .goal-section h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            font-weight: 400;
+        }
+
+        .goal-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .goal-input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border);
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            background: white;
+        }
+
+        .goal-progress {
+            margin-top: 10px;
+            height: 20px;
+            background: var(--light-gray);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .goal-progress-bar {
+            height: 100%;
+            background: #000;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.85em;
+            font-weight: 300;
+        }
+
+        /* 報酬セクション */
+        .reward-section {
+            background: var(--light-gray);
+            border: 1px solid var(--border);
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .reward-section h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-weight: 400;
+        }
+
+        .reward-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .reward-item {
+            background: white;
+            padding: 10px;
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+            position: relative;
+        }
+
+        .reward-item .reward-date {
+            color: var(--dark-gray);
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .reward-item .reward-cost {
+            color: var(--primary);
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .reward-item.exchanged {
+            opacity: 0.6;
+        }
+
+        .reward-item.exchanged .reward-status {
+            color: var(--medium-gray);
+            font-size: 0.85em;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .reward-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .reward-actions .btn-action {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+        }
+
+        .btn-reward {
+            background: #000;
+            margin-top: 10px;
+        }
+
+        /* グラフ */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-top: 15px;
+        }
+
+        /* ログ一覧 */
+        .records-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .record-item {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            border-left: 4px solid transparent;
+            position: relative;
+        }
+
+        .record-item:last-child {
+            border-bottom: none;
+        }
+
+        .record-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-action {
+            background: transparent;
+            color: var(--dark-gray);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 300;
+        }
+
+        .btn-action:hover {
+            background: var(--light-gray);
+            border-color: var(--primary);
+        }
+
+        .btn-delete {
+            color: var(--dark-gray);
+        }
+
+        .btn-delete:hover {
+            border-color: var(--primary);
+        }
+
+        .edit-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .edit-form .form-group {
+            margin-bottom: 10px;
+        }
+
+        .edit-form .failure-type-buttons {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .edit-form .type-btn {
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+
+        .edit-form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .edit-form-actions .btn {
+            width: auto;
+            padding: 10px 20px;
+        }
+
+        .btn-cancel {
+            background: var(--light-gray);
+            color: var(--primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-cancel:hover {
+            background: var(--border);
+        }
+
+        .record-item.challenge {
+            border-left-color: #000;
+        }
+
+        .record-item.start {
+            border-left-color: #666;
+        }
+
+        .record-item.external {
+            border-left-color: #999;
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .record-type {
+            font-weight: 400;
+            color: var(--primary);
+            font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+        }
+
+        .record-points {
+            background: #000;
+            color: white;
+            padding: 4px 10px;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            font-weight: 300;
+        }
+
+        .record-desc {
+            color: var(--dark-gray);
+            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+            margin-bottom: 5px;
+        }
+
+        .record-time {
+            color: var(--medium-gray);
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
+        }
+
+        .alert {
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+            border: 1px solid var(--border);
+        }
+
+        .alert-success {
+            background: var(--light-gray);
+            color: var(--primary);
+            border-color: var(--border);
+        }
+
+        .alert-error {
+            background: var(--light-gray);
+            color: var(--primary);
+            border-color: var(--border);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            background: var(--light-gray);
+            color: var(--dark-gray);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            cursor: pointer;
+            font-weight: 300;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--primary);
+            border-color: var(--border);
+            border-bottom-color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* レスポンシブ */
+        @media (min-width: 768px) {
+            .dashboard {
+                grid-template-columns: 2fr 1fr;
+            }
+
+            .failure-type-buttons {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .goal-input-group {
+                max-width: 400px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .score-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>失敗ログ</h1>
+            <p>挑戦・経験・進歩の証を記録しよう</p>
+        </div>
+
+        <!-- ダッシュボード -->
+        <div class="dashboard">
+                <div class="score-card">
+                <div class="score-label" id="scoreLabel">現在の失敗点</div>
+                <div class="score-value" id="totalScore">0</div>
+                <div class="score-subtitle">挑戦の証</div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item challenge-highlight">
+                    <div class="stat-value" id="challengeCount">0</div>
+                    <div class="stat-label">挑戦回数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">総記録数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="goalProgress">0%</div>
+                    <div class="stat-label">目標達成率</div>
+                </div>
+            </div>
+            <div class="level-section">
+                <h3>レベル</h3>
+                <div class="level-info">
+                    <div>
+                        <div class="level-current" id="currentLevel">Lv.1</div>
+                        <div style="font-size: 0.9em; color: var(--dark-gray); margin-top: 5px;">
+                            <span id="levelPoints">0</span> / <span id="nextLevelPoints">100</span> 点
+                        </div>
+                    </div>
+                    <div id="levelRewardBadge" style="display: none;">
+                        <div class="level-reward-badge">報酬獲得</div>
+                    </div>
+                </div>
+                <div class="level-progress" id="levelProgressBar">
+                    <div class="level-progress-bar" id="levelProgressFill">0%</div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label style="font-size: 0.9em; color: var(--dark-gray);">レベルアップに必要な点数:</label>
+                    <input type="number" id="levelThresholdInput" value="100" min="10" style="width: 100px; padding: 5px; margin-left: 10px; border: 1px solid var(--border);">
+                    <button class="btn" onclick="setLevelThreshold()" style="width: auto; padding: 5px 15px; margin-left: 10px; font-size: 0.9em;">設定</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- タブ -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('record')">記録</button>
+            <button class="tab" onclick="switchTab('dashboard')">ダッシュボード</button>
+            <button class="tab" onclick="switchTab('rewards')">報酬</button>
+        </div>
+
+        <!-- 記録タブ -->
+        <div id="recordTab" class="tab-content active">
+            <div class="card">
+                <h2>失敗を記録</h2>
+                
+                <!-- 目標設定 -->
+                <div class="goal-section">
+                    <h3>目標点数</h3>
+                    <div class="goal-input-group">
+                        <input type="number" id="goalInput" placeholder="目標点数（例：100）" min="1">
+                        <button class="btn" onclick="setGoal()" style="width: auto; padding: 10px 20px;">設定</button>
+                    </div>
+                    <div class="goal-progress" id="goalProgressBar" style="display: none;">
+                        <div class="goal-progress-bar" id="goalProgressFill">0%</div>
+                    </div>
+                </div>
+
+                <form id="recordForm">
+                    <div class="form-group">
+                        <label>失敗の種類 *</label>
+                        <div class="failure-type-buttons">
+                            <div class="type-btn challenge" data-type="challenge" data-points="10">
+                                <div class="type-name">挑戦型失敗</div>
+                                <div class="type-points">積極的に挑戦し失敗 +10点</div>
+                            </div>
+                            <div class="type-btn start" data-type="start" data-points="5">
+                                <div class="type-name">スタート失敗</div>
+                                <div class="type-points">先延ばしで未着手 +5点</div>
+                            </div>
+                            <div class="type-btn external" data-type="external" data-points="8">
+                                <div class="type-name">外部失敗</div>
+                                <div class="type-points">不可抗力な要因 +8点</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">詳細記述（任意）</label>
+                        <textarea id="description" placeholder="今回の失敗について詳しく記録..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="reflection">振り返り（任意）</label>
+                        <textarea id="reflection" placeholder="学んだこと、次への改善点..."></textarea>
+                    </div>
+                    <button type="submit" class="btn">記録する</button>
+                </form>
+                <div id="recordAlert"></div>
+            </div>
+        </div>
+
+        <!-- ダッシュボードタブ -->
+        <div id="dashboardTab" class="tab-content">
+            <div class="card">
+                <h2>統計</h2>
+                <div style="margin-bottom: 15px;">
+                    <div class="tabs" style="margin-bottom: 0;">
+                        <button class="tab active" onclick="switchStatPeriod('day')" id="statTabDay">日別</button>
+                        <button class="tab" onclick="switchStatPeriod('week')" id="statTabWeek">週別</button>
+                        <button class="tab" onclick="switchStatPeriod('month')" id="statTabMonth">月別</button>
+                    </div>
+                </div>
+                <div id="statSummary" class="stats-grid" style="margin-bottom: 20px;"></div>
+                <div class="chart-container">
+                    <canvas id="typeChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2>記録一覧</h2>
+                <div class="records-list" id="recordsList"></div>
+            </div>
+        </div>
+
+        <!-- 報酬タブ -->
+        <div id="rewardsTab" class="tab-content">
+            <div class="card">
+                <h2>報酬システム</h2>
+                <div class="reward-section">
+                    <h3>報酬を記録</h3>
+                    <div class="form-group">
+                        <label>報酬の内容</label>
+                        <input type="text" id="rewardInput" placeholder="ご褒美の内容（例：好きな本を買う）">
+                    </div>
+                    <div class="form-group">
+                        <label>必要な積分（任意）</label>
+                        <input type="number" id="rewardCost" placeholder="積分（例：50）" min="0">
+                        <small style="color: var(--medium-gray); font-size: 0.85em; display: block; margin-top: 5px;">積分を設定すると、後で交換できます</small>
+                    </div>
+                    <button class="btn btn-reward" onclick="recordReward()">報酬を記録</button>
+                    <div id="rewardAlert"></div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <h3 style="margin-bottom: 10px;">報酬履歴</h3>
+                    <div class="reward-list" id="rewardList"></div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <h3 style="margin-bottom: 10px;">レベルアップ履歴</h3>
+                    <div class="level-history" id="levelHistory"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // データ管理
+        let records = JSON.parse(localStorage.getItem('failureRecords') || '[]');
+        let goal = parseInt(localStorage.getItem('failureGoal') || '0');
+        let rewards = JSON.parse(localStorage.getItem('failureRewards') || '[]');
+        let usedPoints = parseInt(localStorage.getItem('usedPoints') || '0'); // 已使用的积分
+        let levelThreshold = parseInt(localStorage.getItem('levelThreshold') || '100'); // 每级需要的点数
+        let levelHistory = JSON.parse(localStorage.getItem('levelHistory') || '[]'); // 升级历史
+        let selectedType = null;
+        let typeChart = null;
+        let trendChart = null;
+        let currentStatPeriod = 'day'; // 'day', 'week', 'month'
+
+        // ポイント設定
+        const POINTS = {
+            challenge: 10,
+            start: 5,
+            external: 8
+        };
+
+        const TYPE_NAMES = {
+            challenge: '挑戦型失敗',
+            start: 'スタート失敗',
+            external: '外部失敗'
+        };
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            initTypeButtons();
+            loadGoal();
+            loadLevelThreshold();
+            updateDashboard();
+            updateStatSummary();
+            loadRecords();
+            loadLevelHistory();
+            if (records.length > 0) {
+                updateCharts();
+            }
+        });
+
+        // 失敗タイプボタンの初期化
+        function initTypeButtons() {
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedType = this.dataset.type;
+                });
+            });
+        }
+
+        // タブ切り替え
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            if (tabName === 'dashboard') {
+                updateStatSummary();
+                updateCharts();
+            }
+        }
+
+        // 目標設定
+        function setGoal() {
+            const goalValue = parseInt(document.getElementById('goalInput').value);
+            if (goalValue && goalValue > 0) {
+                goal = goalValue;
+                localStorage.setItem('failureGoal', goal.toString());
+                loadGoal();
+                updateDashboard();
+                showAlert('recordAlert', '目標点数を設定しました！', 'success');
+            }
+        }
+
+        function loadGoal() {
+            if (goal > 0) {
+                document.getElementById('goalInput').value = goal;
+                document.getElementById('goalProgressBar').style.display = 'block';
+            }
+        }
+
+        // 記録フォーム送信
+        document.getElementById('recordForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            if (!selectedType) {
+                showAlert('recordAlert', '失敗の種類を選択してください', 'error');
+                return;
+            }
+
+            const record = {
+                id: Date.now(),
+                type: selectedType,
+                points: POINTS[selectedType],
+                description: document.getElementById('description').value.trim(),
+                reflection: document.getElementById('reflection').value.trim(),
+                timestamp: new Date().toISOString()
+            };
+
+            records.unshift(record);
+            localStorage.setItem('failureRecords', JSON.stringify(records));
+
+            // フォームリセット
+            document.getElementById('recordForm').reset();
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+            selectedType = null;
+
+            // 目標達成チェック
+            const totalScore = getTotalScore();
+            
+            // レベルアップチェック（先检查升级，避免重复提示）
+            const leveledUp = checkLevelUp(totalScore, record.points);
+            
+            if (!leveledUp) {
+                if (goal > 0 && totalScore >= goal) {
+                    showAlert('recordAlert', `おめでとうございます！目標点数 ${goal} 点に到達しました！報酬を記録しましょう！`, 'success');
+                } else {
+                    showAlert('recordAlert', `記録しました！+${record.points}点`, 'success');
+                }
+            }
+
+            updateDashboard();
+            loadRecords();
+        });
+
+        // レベル計算
+        function calculateLevel(score) {
+            return Math.floor(score / levelThreshold) + 1;
+        }
+
+        // 現在のレベルでの進捗
+        function getLevelProgress(score) {
+            const currentLevel = calculateLevel(score);
+            const pointsInCurrentLevel = score % levelThreshold;
+            const nextLevelPoints = levelThreshold;
+            return {
+                level: currentLevel,
+                points: pointsInCurrentLevel,
+                nextLevelPoints: nextLevelPoints,
+                progress: (pointsInCurrentLevel / nextLevelPoints) * 100
+            };
+        }
+
+        // レベルアップチェック
+        function checkLevelUp(newScore, addedPoints) {
+            const oldScore = newScore - addedPoints;
+            const oldLevel = calculateLevel(oldScore);
+            const newLevel = calculateLevel(newScore);
+            
+            if (newLevel > oldLevel) {
+                // 升级了
+                const levelUpRecord = {
+                    level: newLevel,
+                    score: newScore,
+                    timestamp: new Date().toISOString()
+                };
+                levelHistory.unshift(levelUpRecord);
+                localStorage.setItem('levelHistory', JSON.stringify(levelHistory));
+                
+                // 自动添加一次免费奖励
+                const freeReward = {
+                    id: Date.now(),
+                    text: `レベル${newLevel}達成報酬`,
+                    score: newScore,
+                    cost: 0,
+                    exchanged: false,
+                    exchangeDate: null,
+                    isLevelReward: true,
+                    timestamp: new Date().toISOString()
+                };
+                rewards.unshift(freeReward);
+                localStorage.setItem('failureRewards', JSON.stringify(rewards));
+                
+                showAlert('recordAlert', `レベルアップ！レベル${newLevel}に到達しました。報酬を獲得しました！`, 'success');
+                loadRewards();
+                loadLevelHistory();
+                return true;
+            }
+            return false;
+        }
+
+        // レベル閾値設定
+        function setLevelThreshold() {
+            const newThreshold = parseInt(document.getElementById('levelThresholdInput').value);
+            if (newThreshold && newThreshold >= 10) {
+                levelThreshold = newThreshold;
+                localStorage.setItem('levelThreshold', levelThreshold.toString());
+                updateDashboard();
+                loadLevelHistory();
+            }
+        }
+
+        function loadLevelThreshold() {
+            document.getElementById('levelThresholdInput').value = levelThreshold;
+        }
+
+        // レベル履歴表示
+        function loadLevelHistory() {
+            const historyDiv = document.getElementById('levelHistory');
+            if (!historyDiv) return;
+            
+            if (levelHistory.length === 0) {
+                historyDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">まだレベルアップがありません</p>';
+                return;
+            }
+
+            historyDiv.innerHTML = levelHistory.map(record => {
+                const date = new Date(record.timestamp);
+                return `
+                    <div class="level-history-item">
+                        <div><strong>レベル${record.level}</strong> - ${formatDate(date)}</div>
+                        <div style="color: var(--medium-gray); font-size: 0.9em;">達成点数: ${record.score}点</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ダッシュボード更新
+        function updateDashboard() {
+            const totalScore = getTotalScore();
+            const availableScore = totalScore - usedPoints; // 可用积分
+            const challengeCount = records.filter(r => r.type === 'challenge').length;
+            const totalCount = records.length;
+
+            document.getElementById('totalScore').textContent = totalScore;
+            document.getElementById('challengeCount').textContent = challengeCount;
+            document.getElementById('totalCount').textContent = totalCount;
+
+            // 如果有已使用的积分，显示可用积分
+            const scoreLabel = document.getElementById('scoreLabel');
+            if (usedPoints > 0) {
+                if (scoreLabel) {
+                    scoreLabel.textContent = `現在の失敗点（利用可能: ${availableScore}点）`;
+                }
+            } else {
+                if (scoreLabel) {
+                    scoreLabel.textContent = '現在の失敗点';
+                }
+            }
+
+            // 目標進捗
+            if (goal > 0) {
+                const progress = Math.min(100, Math.round((totalScore / goal) * 100));
+                document.getElementById('goalProgress').textContent = progress + '%';
+                document.getElementById('goalProgressFill').style.width = progress + '%';
+                document.getElementById('goalProgressFill').textContent = progress + '%';
+            } else {
+                document.getElementById('goalProgress').textContent = '-';
+            }
+
+            // レベル情報更新
+            const levelInfo = getLevelProgress(totalScore);
+            document.getElementById('currentLevel').textContent = `Lv.${levelInfo.level}`;
+            document.getElementById('levelPoints').textContent = levelInfo.points;
+            document.getElementById('nextLevelPoints').textContent = levelInfo.nextLevelPoints;
+            
+            const progressBar = document.getElementById('levelProgressFill');
+            if (progressBar) {
+                progressBar.style.width = levelInfo.progress + '%';
+                progressBar.textContent = Math.round(levelInfo.progress) + '%';
+            }
+
+            // 检查是否有未兑换的等级奖励
+            const hasUnusedLevelReward = rewards.some(r => r.isLevelReward && !r.exchanged);
+            const rewardBadge = document.getElementById('levelRewardBadge');
+            if (rewardBadge) {
+                rewardBadge.style.display = hasUnusedLevelReward ? 'block' : 'none';
+            }
+        }
+
+        // 総スコア計算
+        function getTotalScore() {
+            return records.reduce((sum, r) => sum + r.points, 0);
+        }
+
+        // 記録一覧表示
+        function loadRecords() {
+            const listDiv = document.getElementById('recordsList');
+            
+            if (records.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">まだ記録がありません</p>';
+                return;
+            }
+
+            listDiv.innerHTML = records.map(record => {
+                const date = new Date(record.timestamp);
+                return `
+                    <div class="record-item ${record.type}" data-id="${record.id}">
+                        <div class="record-header">
+                            <div class="record-type">${TYPE_NAMES[record.type]}</div>
+                            <div class="record-points">+${record.points}点</div>
+                        </div>
+                        ${record.description ? `<div class="record-desc">${record.description}</div>` : ''}
+                        ${record.reflection ? `<div class="record-desc" style="font-style: italic; color: var(--medium-gray);">${record.reflection}</div>` : ''}
+                        <div class="record-time">${formatDate(date)}</div>
+                        <div class="record-actions">
+                            <button class="btn-action" onclick="editRecord(${record.id})">編集</button>
+                            <button class="btn-action btn-delete" onclick="deleteRecord(${record.id})">削除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 記録削除
+        function deleteRecord(id) {
+            if (confirm('この記録を削除しますか？')) {
+                records = records.filter(r => r.id !== id);
+                localStorage.setItem('failureRecords', JSON.stringify(records));
+            updateDashboard();
+            loadRecords();
+            updateStatSummary();
+            updateCharts();
+            }
+        }
+
+        // 記録編集
+        function editRecord(id) {
+            const record = records.find(r => r.id === id);
+            if (!record) return;
+
+            const recordItem = document.querySelector(`.record-item[data-id="${id}"]`);
+            if (!recordItem) return;
+
+            // 既存の編集フォームを削除
+            const existingEdit = recordItem.querySelector('.edit-form');
+            if (existingEdit) {
+                existingEdit.remove();
+                return;
+            }
+
+            // 編集フォームを作成
+            const editForm = document.createElement('div');
+            editForm.className = 'edit-form';
+            editForm.innerHTML = `
+                <div class="form-group">
+                    <label>失敗の種類 *</label>
+                    <div class="failure-type-buttons">
+                        <div class="type-btn challenge ${record.type === 'challenge' ? 'selected' : ''}" data-type="challenge" data-points="10" onclick="selectEditType(this, '${id}')">
+                            <div class="type-name">挑戦型失敗</div>
+                            <div class="type-points">積極的に挑戦し失敗 +10点</div>
+                        </div>
+                        <div class="type-btn start ${record.type === 'start' ? 'selected' : ''}" data-type="start" data-points="5" onclick="selectEditType(this, '${id}')">
+                            <div class="type-name">スタート失敗</div>
+                            <div class="type-points">先延ばしで未着手 +5点</div>
+                        </div>
+                        <div class="type-btn external ${record.type === 'external' ? 'selected' : ''}" data-type="external" data-points="8" onclick="selectEditType(this, '${id}')">
+                            <div class="type-name">外部失敗</div>
+                            <div class="type-points">不可抗力な要因 +8点</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>詳細記述</label>
+                    <textarea id="edit-description-${id}" placeholder="今回の失敗について詳しく記録...">${record.description || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>振り返り</label>
+                    <textarea id="edit-reflection-${id}" placeholder="学んだこと、次への改善点...">${record.reflection || ''}</textarea>
+                </div>
+                <div class="edit-form-actions">
+                    <button class="btn" onclick="saveRecord(${id})">保存</button>
+                    <button class="btn btn-cancel" onclick="cancelEdit(${id})">キャンセル</button>
+                </div>
+            `;
+
+            recordItem.appendChild(editForm);
+            recordItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // 編集時のタイプ選択
+        function selectEditType(btn, recordId) {
+            const recordItem = document.querySelector(`.record-item[data-id="${recordId}"]`);
+            const buttons = recordItem.querySelectorAll('.edit-form .type-btn');
+            buttons.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        // 記録保存
+        function saveRecord(id) {
+            const record = records.find(r => r.id === id);
+            if (!record) return;
+
+            const recordItem = document.querySelector(`.record-item[data-id="${id}"]`);
+            const selectedTypeBtn = recordItem.querySelector('.edit-form .type-btn.selected');
+            
+            if (!selectedTypeBtn) {
+                alert('失敗の種類を選択してください');
+                return;
+            }
+
+            const newType = selectedTypeBtn.dataset.type;
+            const newPoints = parseInt(selectedTypeBtn.dataset.points);
+            const newDescription = document.getElementById(`edit-description-${id}`).value.trim();
+            const newReflection = document.getElementById(`edit-reflection-${id}`).value.trim();
+
+            // 記録を更新
+            record.type = newType;
+            record.points = newPoints;
+            record.description = newDescription;
+            record.reflection = newReflection;
+
+            localStorage.setItem('failureRecords', JSON.stringify(records));
+            
+            // 編集フォームを削除
+            const editForm = recordItem.querySelector('.edit-form');
+            if (editForm) {
+                editForm.remove();
+            }
+
+            // 表示を更新
+            updateDashboard();
+            loadRecords();
+            updateStatSummary();
+            updateCharts();
+        }
+
+        // 編集キャンセル
+        function cancelEdit(id) {
+            const recordItem = document.querySelector(`.record-item[data-id="${id}"]`);
+            const editForm = recordItem.querySelector('.edit-form');
+            if (editForm) {
+                editForm.remove();
+            }
+        }
+
+        // 統計期間切り替え
+        function switchStatPeriod(period) {
+            currentStatPeriod = period;
+            
+            // タブのアクティブ状態を更新
+            document.querySelectorAll('#dashboardTab .tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`statTab${period.charAt(0).toUpperCase() + period.slice(1)}`).classList.add('active');
+            
+            updateStatSummary();
+            updateCharts();
+        }
+
+        // 統計サマリー更新
+        function updateStatSummary() {
+            const summaryDiv = document.getElementById('statSummary');
+            if (!summaryDiv) return;
+
+            let filteredRecords = [];
+            let periodLabel = '';
+            let periodCount = 0;
+            let periodPoints = 0;
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            switch(currentStatPeriod) {
+                case 'day':
+                    // 今日の記録
+                    filteredRecords = records.filter(r => {
+                        const recordDate = new Date(r.timestamp);
+                        return recordDate >= today;
+                    });
+                    periodLabel = '今日';
+                    break;
+                case 'week':
+                    // 今週の記録（週の開始は月曜日）
+                    const weekStart = new Date(today);
+                    const dayOfWeek = today.getDay();
+                    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 月曜日を週の開始とする
+                    weekStart.setDate(today.getDate() + diff);
+                    weekStart.setHours(0, 0, 0, 0);
+                    
+                    filteredRecords = records.filter(r => {
+                        const recordDate = new Date(r.timestamp);
+                        return recordDate >= weekStart;
+                    });
+                    periodLabel = '今週';
+                    break;
+                case 'month':
+                    // 今月の記録
+                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                    filteredRecords = records.filter(r => {
+                        const recordDate = new Date(r.timestamp);
+                        return recordDate >= monthStart;
+                    });
+                    periodLabel = '今月';
+                    break;
+            }
+
+            periodCount = filteredRecords.length;
+            periodPoints = filteredRecords.reduce((sum, r) => sum + r.points, 0);
+
+            const challengeCount = filteredRecords.filter(r => r.type === 'challenge').length;
+            const startCount = filteredRecords.filter(r => r.type === 'start').length;
+            const externalCount = filteredRecords.filter(r => r.type === 'external').length;
+
+            summaryDiv.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${periodCount}</div>
+                    <div class="stat-label">${periodLabel}の記録数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${periodPoints}</div>
+                    <div class="stat-label">${periodLabel}の獲得点数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${challengeCount}</div>
+                    <div class="stat-label">挑戦型失敗</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${startCount}</div>
+                    <div class="stat-label">スタート失敗</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${externalCount}</div>
+                    <div class="stat-label">外部失敗</div>
+                </div>
+            `;
+        }
+
+        // グラフ更新
+        function updateCharts() {
+            updateTypeChart();
+            updateTrendChart();
+        }
+
+        // タイプ別グラフ
+        function updateTypeChart() {
+            const ctx = document.getElementById('typeChart').getContext('2d');
+            
+            // 現在の統計期間に基づいてフィルタリング
+            let filteredRecords = getFilteredRecordsByPeriod();
+            
+            const typeCounts = {
+                '挑戦型失敗': filteredRecords.filter(r => r.type === 'challenge').length,
+                'スタート失敗': filteredRecords.filter(r => r.type === 'start').length,
+                '外部失敗': filteredRecords.filter(r => r.type === 'external').length
+            };
+
+            if (typeChart) {
+                typeChart.destroy();
+            }
+
+            typeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(typeCounts),
+                    datasets: [{
+                        data: Object.values(typeCounts),
+                        backgroundColor: ['#000', '#666', '#999'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '失敗の種類別割合',
+                            font: { size: 16 }
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 期間別フィルタリング
+        function getFilteredRecordsByPeriod() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            switch(currentStatPeriod) {
+                case 'day':
+                    // 今日の記録
+                    return records.filter(r => {
+                        const recordDate = new Date(r.timestamp);
+                        return recordDate >= today;
+                    });
+                case 'week':
+                    // 今週の記録
+                    const weekStart = new Date(today);
+                    const dayOfWeek = today.getDay();
+                    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                    weekStart.setDate(today.getDate() + diff);
+                    weekStart.setHours(0, 0, 0, 0);
+                    
+                    return records.filter(r => {
+                        const recordDate = new Date(r.timestamp);
+                        return recordDate >= weekStart;
+                    });
+                case 'month':
+                    // 今月の記録
+                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                    return records.filter(r => {
+                        const recordDate = new Date(r.timestamp);
+                        return recordDate >= monthStart;
+                    });
+                default:
+                    return records;
+            }
+        }
+
+        // トレンドグラフ
+        function updateTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            let periodData = {};
+            let periodLabel = '';
+            let chartTitle = '';
+
+            const filteredRecords = getFilteredRecordsByPeriod();
+
+            switch(currentStatPeriod) {
+                case 'day':
+                    // 日別集計（過去30日）
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    
+                    records.filter(r => {
+                        const recordDate = new Date(r.timestamp);
+                        return recordDate >= thirtyDaysAgo;
+                    }).forEach(record => {
+                        const date = new Date(record.timestamp);
+                        const dateKey = date.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                        periodData[dateKey] = (periodData[dateKey] || 0) + 1;
+                    });
+                    chartTitle = '過去30日の記録推移';
+                    break;
+                case 'week':
+                    // 週別集計（過去12週）
+                    const twelveWeeksAgo = new Date();
+                    twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84); // 12週前
+                    
+                    records.filter(r => {
+                        const recordDate = new Date(r.timestamp);
+                        return recordDate >= twelveWeeksAgo;
+                    }).forEach(record => {
+                        const date = new Date(record.timestamp);
+                        const dayOfWeek = date.getDay();
+                        const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                        const weekStart = new Date(date);
+                        weekStart.setDate(date.getDate() + diff);
+                        weekStart.setHours(0, 0, 0, 0);
+                        
+                        const weekKey = weekStart.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                        periodData[weekKey] = (periodData[weekKey] || 0) + 1;
+                    });
+                    chartTitle = '過去12週の記録推移';
+                    break;
+                case 'month':
+                    // 月別集計（過去12ヶ月）
+                    const twelveMonthsAgo = new Date();
+                    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+                    
+                    records.filter(r => {
+                        const recordDate = new Date(r.timestamp);
+                        return recordDate >= twelveMonthsAgo;
+                    }).forEach(record => {
+                        const date = new Date(record.timestamp);
+                        const monthKey = date.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit' });
+                        periodData[monthKey] = (periodData[monthKey] || 0) + 1;
+                    });
+                    chartTitle = '過去12ヶ月の記録推移';
+                    break;
+            }
+
+            const periods = Object.keys(periodData).sort();
+            const counts = periods.map(period => periodData[period]);
+
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: periods,
+                    datasets: [{
+                        label: '記録数',
+                        data: counts,
+                        borderColor: '#000',
+                        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: chartTitle,
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 報酬記録
+        function recordReward() {
+            const rewardText = document.getElementById('rewardInput').value.trim();
+            if (!rewardText) {
+                showAlert('rewardAlert', '報酬の内容を入力してください', 'error');
+                return;
+            }
+
+            const cost = parseInt(document.getElementById('rewardCost').value) || 0;
+
+            const reward = {
+                id: Date.now(),
+                text: rewardText,
+                score: getTotalScore(),
+                cost: cost,
+                exchanged: false,
+                exchangeDate: null,
+                timestamp: new Date().toISOString()
+            };
+
+            rewards.unshift(reward);
+            localStorage.setItem('failureRewards', JSON.stringify(rewards));
+
+            document.getElementById('rewardInput').value = '';
+            document.getElementById('rewardCost').value = '';
+            showAlert('rewardAlert', '報酬を記録しました！', 'success');
+            loadRewards();
+            updateDashboard();
+        }
+
+        // 報酬一覧表示
+        function loadRewards() {
+            const listDiv = document.getElementById('rewardList');
+            
+            if (rewards.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">まだ報酬がありません</p>';
+                return;
+            }
+
+            listDiv.innerHTML = rewards.map(reward => {
+                const date = new Date(reward.timestamp);
+                const exchangedDate = reward.exchangeDate ? new Date(reward.exchangeDate) : null;
+                const isLevelReward = reward.isLevelReward || false;
+                return `
+                    <div class="reward-item ${reward.exchanged ? 'exchanged' : ''}" data-id="${reward.id}">
+                        <div>
+                            <strong>${reward.text}</strong>
+                            ${isLevelReward ? '<span class="level-reward-badge" style="margin-left: 8px;">レベル報酬</span>' : ''}
+                        </div>
+                        ${reward.cost > 0 ? `<div class="reward-cost">必要積分: ${reward.cost}点</div>` : isLevelReward ? '<div class="reward-cost" style="color: var(--primary);">無料報酬</div>' : ''}
+                        <div class="reward-date">記録時点数: ${reward.score}点 - ${formatDate(date)}</div>
+                        ${reward.exchanged && exchangedDate ? `<div class="reward-status">交換済み: ${formatDate(exchangedDate)}</div>` : ''}
+                        <div class="reward-actions">
+                            ${!reward.exchanged ? `<button class="btn-action" onclick="editReward(${reward.id})">編集</button>` : ''}
+                            ${!reward.exchanged && reward.cost > 0 ? `<button class="btn-action" onclick="exchangeReward(${reward.id})">交換</button>` : ''}
+                            ${!reward.exchanged && isLevelReward ? `<button class="btn-action" onclick="useLevelReward(${reward.id})">使用</button>` : ''}
+                            <button class="btn-action btn-delete" onclick="deleteReward(${reward.id})">削除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // レベル報酬使用
+        function useLevelReward(id) {
+            const reward = rewards.find(r => r.id === id);
+            if (!reward || reward.exchanged || !reward.isLevelReward) return;
+
+            if (confirm('このレベル報酬を使用しますか？')) {
+                reward.exchanged = true;
+                reward.exchangeDate = new Date().toISOString();
+                
+                localStorage.setItem('failureRewards', JSON.stringify(rewards));
+                
+                loadRewards();
+                updateDashboard();
+                showAlert('rewardAlert', 'レベル報酬を使用しました！', 'success');
+            }
+        }
+
+        // 報酬削除
+        function deleteReward(id) {
+            if (confirm('この報酬を削除しますか？')) {
+                const reward = rewards.find(r => r.id === id);
+                if (reward && reward.exchanged) {
+                    // 如果已兑换，恢复积分
+                    usedPoints = Math.max(0, usedPoints - reward.cost);
+                    localStorage.setItem('usedPoints', usedPoints.toString());
+                }
+                rewards = rewards.filter(r => r.id !== id);
+                localStorage.setItem('failureRewards', JSON.stringify(rewards));
+                loadRewards();
+                updateDashboard();
+            }
+        }
+
+        // 報酬編集
+        function editReward(id) {
+            const reward = rewards.find(r => r.id === id);
+            if (!reward || reward.exchanged || reward.isLevelReward) return;
+
+            const rewardItem = document.querySelector(`.reward-item[data-id="${id}"]`);
+            if (!rewardItem) return;
+
+            // 既存の編集フォームを削除
+            const existingEdit = rewardItem.querySelector('.edit-form');
+            if (existingEdit) {
+                existingEdit.remove();
+                return;
+            }
+
+            // 編集フォームを作成
+            const editForm = document.createElement('div');
+            editForm.className = 'edit-form';
+            editForm.innerHTML = `
+                <div class="form-group">
+                    <label>報酬の内容</label>
+                    <input type="text" id="edit-reward-text-${id}" value="${reward.text}" placeholder="ご褒美の内容">
+                </div>
+                <div class="form-group">
+                    <label>必要な積分</label>
+                    <input type="number" id="edit-reward-cost-${id}" value="${reward.cost || 0}" placeholder="積分" min="0">
+                </div>
+                <div class="edit-form-actions">
+                    <button class="btn" onclick="saveReward(${id})">保存</button>
+                    <button class="btn btn-cancel" onclick="cancelRewardEdit(${id})">キャンセル</button>
+                </div>
+            `;
+
+            rewardItem.appendChild(editForm);
+            rewardItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // 報酬保存
+        function saveReward(id) {
+            const reward = rewards.find(r => r.id === id);
+            if (!reward || reward.exchanged || reward.isLevelReward) return;
+
+            const rewardItem = document.querySelector(`.reward-item[data-id="${id}"]`);
+            const newText = document.getElementById(`edit-reward-text-${id}`).value.trim();
+            const newCost = parseInt(document.getElementById(`edit-reward-cost-${id}`).value) || 0;
+
+            if (!newText) {
+                alert('報酬の内容を入力してください');
+                return;
+            }
+
+            // 如果积分增加且已兑换，需要检查
+            if (reward.exchanged && newCost > reward.cost) {
+                const additionalCost = newCost - reward.cost;
+                const availablePoints = getTotalScore() - usedPoints;
+                if (availablePoints < additionalCost) {
+                    alert(`積分が不足しています。追加で${additionalCost}点必要です。`);
+                    return;
+                }
+                usedPoints += additionalCost;
+                localStorage.setItem('usedPoints', usedPoints.toString());
+            }
+
+            reward.text = newText;
+            reward.cost = newCost;
+
+            localStorage.setItem('failureRewards', JSON.stringify(rewards));
+            
+            // 編集フォームを削除
+            const editForm = rewardItem.querySelector('.edit-form');
+            if (editForm) {
+                editForm.remove();
+            }
+
+            loadRewards();
+            updateDashboard();
+        }
+
+        // 報酬編集キャンセル
+        function cancelRewardEdit(id) {
+            const rewardItem = document.querySelector(`.reward-item[data-id="${id}"]`);
+            const editForm = rewardItem.querySelector('.edit-form');
+            if (editForm) {
+                editForm.remove();
+            }
+        }
+
+        // 報酬交換
+        function exchangeReward(id) {
+            const reward = rewards.find(r => r.id === id);
+            if (!reward || reward.exchanged || reward.cost <= 0 || reward.isLevelReward) return;
+
+            const availablePoints = getTotalScore() - usedPoints;
+            if (availablePoints < reward.cost) {
+                alert(`積分が不足しています。現在の利用可能積分: ${availablePoints}点、必要積分: ${reward.cost}点`);
+                return;
+            }
+
+            if (confirm(`この報酬を交換しますか？\n必要積分: ${reward.cost}点\n利用可能積分: ${availablePoints}点`)) {
+                reward.exchanged = true;
+                reward.exchangeDate = new Date().toISOString();
+                usedPoints += reward.cost;
+                
+                localStorage.setItem('failureRewards', JSON.stringify(rewards));
+                localStorage.setItem('usedPoints', usedPoints.toString());
+                
+                loadRewards();
+                updateDashboard();
+                showAlert('rewardAlert', `報酬を交換しました！${reward.cost}点を使用しました。`, 'success');
+            }
+        }
+
+        // アラート表示
+        function showAlert(elementId, message, type) {
+            const alertDiv = document.getElementById(elementId);
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+            alertDiv.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // 日付フォーマット
+        function formatDate(date) {
+            return date.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 報酬タブ表示時に報酬を読み込む
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                if (this.textContent.includes('報酬')) {
+                    loadRewards();
+                    loadLevelHistory();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
